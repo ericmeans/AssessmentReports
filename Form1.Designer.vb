@@ -29,6 +29,7 @@ Partial Class Form1
         Me.OpenFileDialog1 = New System.Windows.Forms.OpenFileDialog()
         Me.BackgroundWorker1 = New System.ComponentModel.BackgroundWorker()
         Me.btnCancel = New System.Windows.Forms.Button()
+        Me.txtWarnings = New System.Windows.Forms.TextBox()
         Me.SuspendLayout()
         '
         'btnProcessFile
@@ -59,7 +60,7 @@ Partial Class Form1
         Me.txtLog.Multiline = True
         Me.txtLog.Name = "txtLog"
         Me.txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
-        Me.txtLog.Size = New System.Drawing.Size(587, 528)
+        Me.txtLog.Size = New System.Drawing.Size(587, 252)
         Me.txtLog.TabIndex = 2
         '
         'FolderBrowserDialog1
@@ -87,11 +88,24 @@ Partial Class Form1
         Me.btnCancel.UseVisualStyleBackColor = True
         Me.btnCancel.Visible = False
         '
+        'txtWarnings
+        '
+        Me.txtWarnings.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+            Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.txtWarnings.Location = New System.Drawing.Point(12, 325)
+        Me.txtWarnings.Multiline = True
+        Me.txtWarnings.Name = "txtWarnings"
+        Me.txtWarnings.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
+        Me.txtWarnings.Size = New System.Drawing.Size(587, 270)
+        Me.txtWarnings.TabIndex = 4
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(611, 607)
+        Me.Controls.Add(Me.txtWarnings)
         Me.Controls.Add(Me.btnCancel)
         Me.Controls.Add(Me.txtLog)
         Me.Controls.Add(Me.lblFileName)
@@ -109,5 +123,6 @@ Partial Class Form1
     Friend WithEvents OpenFileDialog1 As System.Windows.Forms.OpenFileDialog
     Friend WithEvents BackgroundWorker1 As System.ComponentModel.BackgroundWorker
     Friend WithEvents btnCancel As System.Windows.Forms.Button
+    Friend WithEvents txtWarnings As System.Windows.Forms.TextBox
 
 End Class

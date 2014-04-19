@@ -1,6 +1,7 @@
 ﻿Imports Microsoft.Office.Interop
 Imports System.Linq
 Imports System.Globalization
+Imports System.Text
 
 Public Class Form1
     Private Sub btnProcessFile_Click(sender As Object, e As EventArgs) Handles btnProcessFile.Click
@@ -17,7 +18,7 @@ Public Class Form1
                         lblFileName.Text = lblFileName.Text & vbCrLf & "Semester: " & dlgOptions.txtCurrentSemester.Text
                     End If
                     btnCancel.Visible = True
-                    BackgroundWorker1.RunWorkerAsync({OpenFileDialog1.FileName, FolderBrowserDialog1.SelectedPath, dlgOptions.txtCurrentSemester.Text, dlgOptions.txtFirstScoreCol.Text, dlgOptions.txtLastScoreCol.Text})
+                    BackgroundWorker1.RunWorkerAsync({OpenFileDialog1.FileName, FolderBrowserDialog1.SelectedPath, dlgOptions.txtCurrentSemester.Text, dlgOptions.txtFirstScoreCol.Text, dlgOptions.txtLastScoreCol.Text, If(dlgOptions.chkDebug.Checked, Boolean.TrueString, Boolean.FalseString)})
                 End If
             End If
         End If
@@ -50,7 +51,10 @@ Public Class Form1
     Private Function GetStringCellValue(worksheet As Excel.Worksheet, row As Integer, column As Integer) As String
         Dim rc As String = GetCellValue(Of String)(worksheet, row, column)
         If Not String.IsNullOrEmpty(rc) Then
-            rc = rc.Replace(Microsoft.VisualBasic.ChrW(&HA0), " "c)
+            rc = rc.Replace(Microsoft.VisualBasic.ChrW(&HA0), " "c).Trim()
+            While rc.Contains("  ")
+                rc = rc.Replace("  ", " ")
+            End While
         End If
         Return rc
     End Function
@@ -89,12 +93,14 @@ Public Class Form1
         End If
         Dim firstScoreCol As Integer = ConvertExcelColumnToInteger(args(3))
         Dim lastScoreCol As Integer = ConvertExcelColumnToInteger(args(4))
+        Dim includeDebugInfo As Boolean = Boolean.TrueString.Equals(args(5), StringComparison.OrdinalIgnoreCase)
         Dim excel As Excel.Application = Nothing
         Dim workbook As Excel.Workbook = Nothing
         Dim worksheet As Excel.Worksheet = Nothing
         Dim word As Word.Application = Nothing
         Try
             excel = New Excel.Application()
+            excel.Visible = False
             workbook = excel.Workbooks.Open(sourceFile)
             worksheet = workbook.Worksheets(1)
 
@@ -171,7 +177,7 @@ Public Class Form1
             Log("Calculating averages...", True)
             ' Get the roll up data
             Dim averages = From score In scores
-                           Group By sid = score.StudentID, sem = score.SemesterSort, standing = score.ClassStanding, name = score.Name
+                           Group By sid = score.StudentID, sem = score.SemesterSort, name = score.Name
                            Into averageScore = Average(score.Score), list = Group
                            Order By sem
             If BackgroundWorker1.CancellationPending Then
@@ -195,6 +201,8 @@ Public Class Form1
                     Return
                 End If
                 Dim ex = savg.list.First().list.First()
+                Dim warnedClassStandings As Boolean = False
+                Dim warnedEmphases As Boolean = False
                 Log(vbTab & ex.StudentID, True)
 
                 ' Write the report document
@@ -204,7 +212,7 @@ Public Class Form1
                 para.Range.Font.Bold = True
                 para.Range.InsertParagraphAfter()
 
-                Dim table As Word.Table = doc.Tables.Add(doc.Bookmarks.Item("\endofdoc").Range, savg.list.Count() + 1, 4)
+                Dim table As Word.Table = doc.Tables.Add(doc.Bookmarks.Item("\endofdoc").Range, savg.list.Count() + 1, If(includeDebugInfo, 5, 4))
                 table.Cell(1, 1).Range.Text = "Semester"
                 table.Cell(1, 1).Range.Font.Bold = True
                 table.Cell(1, 2).Range.Text = "Assessment"
@@ -216,9 +224,27 @@ Public Class Form1
 
                 row = 2
                 For Each avg In savg.list
+                    ' Sanity check some data for warnings.
+                    If Not warnedClassStandings Then
+                        Dim standings As List(Of String) = (From s In avg.list
+                                                            Select s.ClassStanding).Distinct().ToList()
+                        If standings.Count > 1 Then
+                            warnedClassStandings = True
+                            LogWarning("WARNING: Student " & ex.StudentID & " has multiple listed class standings ('" & String.Join("', '", standings) & "') for semester " & avg.list.First().Semester, True)
+                        End If
+                    End If
+                    If Not warnedEmphases Then
+                        Dim emphases As List(Of String) = (From s In avg.list
+                                                           Select s.Emphasis).Distinct().ToList()
+                        If emphases.Count > 1 Then
+                            warnedEmphases = True
+                            LogWarning("WARNING: Student " & ex.StudentID & " has multiple listed emphases ('" & String.Join("', '", emphases) & "') for semester " & avg.list.First().Semester, True)
+                        End If
+                    End If
+
                     ' Get the comparative average score for students in the same group
                     Dim compQ = From score In scores
-                                Where score.SemesterSort = avg.sem AndAlso score.ClassStanding = avg.standing AndAlso score.Emphasis = ex.Emphasis AndAlso score.Name = avg.name
+                                Where score.SemesterSort = avg.sem AndAlso score.ClassStanding = avg.list.First().ClassStanding AndAlso score.Emphasis = avg.list.First().Emphasis AndAlso score.Name = avg.name
                                 Select score.Score
                     table.Cell(row, 1).Range.Text = avg.list.First().Semester
                     table.Cell(row, 1).Range.Font.Bold = False
@@ -233,6 +259,15 @@ Public Class Form1
                         table.Cell(row, 4).Range.Text = "N/A"
                     End If
                     table.Cell(row, 4).Range.Font.Bold = False
+                    If includeDebugInfo Then
+                        Dim str As New StringBuilder()
+                        str.AppendLine(String.Format("Rollup Student: {0}{2}Rollup Semester: {1}", avg.sid, avg.sem, vbCrLf))
+                        For Each rec In avg.list
+                            str.AppendLine(String.Format("Student: {0}{7}Score Name: {1}{7}Semester: {2} ({3}){7}Standing: {4}{7}Emphasis: {5}{7}Score: {6}", rec.StudentID, rec.Name, rec.Semester, rec.SemesterSort, rec.ClassStanding, rec.Emphasis, rec.Score, vbCrLf))
+                        Next
+                        table.Cell(row, 5).Range.Text = str.ToString()
+                        table.Cell(row, 5).Range.Font.Bold = False
+                    End If
                     row += 1
                 Next
                 table = Nothing
@@ -277,8 +312,24 @@ Public Class Form1
                                           Else
                                               txtLog.Text = message & vbCrLf
                                           End If
-                                          txtLog.SelectionStart = txtLog.TextLength
-                                          txtLog.ScrollToCaret()
+                                          If Not txtLog.Focused Then
+                                              txtLog.SelectionStart = txtLog.TextLength
+                                              txtLog.ScrollToCaret()
+                                          End If
+                                      End Sub))
+    End Sub
+
+    Private Sub LogWarning(message As String, append As Boolean)
+        BeginInvoke(New MethodInvoker(Sub()
+                                          If append Then
+                                              txtWarnings.Text &= message & vbCrLf
+                                          Else
+                                              txtWarnings.Text = message & vbCrLf
+                                          End If
+                                          If Not txtWarnings.Focused Then
+                                              txtWarnings.SelectionStart = txtWarnings.TextLength
+                                              txtWarnings.ScrollToCaret()
+                                          End If
                                       End Sub))
     End Sub
 

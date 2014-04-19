@@ -32,6 +32,7 @@ Partial Class Options
         Me.txtFirstScoreCol = New System.Windows.Forms.TextBox()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.txtLastScoreCol = New System.Windows.Forms.TextBox()
+        Me.chkDebug = New System.Windows.Forms.CheckBox()
         Me.SuspendLayout()
         '
         'btnReady
@@ -41,7 +42,7 @@ Partial Class Options
         Me.btnReady.Location = New System.Drawing.Point(193, 61)
         Me.btnReady.Name = "btnReady"
         Me.btnReady.Size = New System.Drawing.Size(110, 49)
-        Me.btnReady.TabIndex = 3
+        Me.btnReady.TabIndex = 4
         Me.btnReady.Text = "Ready"
         Me.btnReady.UseVisualStyleBackColor = True
         '
@@ -71,7 +72,7 @@ Partial Class Options
         Me.Button1.Location = New System.Drawing.Point(12, 82)
         Me.Button1.Name = "Button1"
         Me.Button1.Size = New System.Drawing.Size(59, 28)
-        Me.Button1.TabIndex = 4
+        Me.Button1.TabIndex = 5
         Me.Button1.Text = "Cancel"
         Me.Button1.UseVisualStyleBackColor = True
         '
@@ -109,6 +110,16 @@ Partial Class Options
         Me.txtLastScoreCol.TabIndex = 2
         Me.txtLastScoreCol.Text = "AH"
         '
+        'chkDebug
+        '
+        Me.chkDebug.AutoSize = True
+        Me.chkDebug.Location = New System.Drawing.Point(15, 59)
+        Me.chkDebug.Name = "chkDebug"
+        Me.chkDebug.Size = New System.Drawing.Size(117, 17)
+        Me.chkDebug.TabIndex = 3
+        Me.chkDebug.Text = "Include Debug Info"
+        Me.chkDebug.UseVisualStyleBackColor = True
+        '
         'Options
         '
         Me.AcceptButton = Me.btnReady
@@ -117,6 +128,7 @@ Partial Class Options
         Me.CancelButton = Me.Button1
         Me.ClientSize = New System.Drawing.Size(315, 122)
         Me.ControlBox = False
+        Me.Controls.Add(Me.chkDebug)
         Me.Controls.Add(Me.txtLastScoreCol)
         Me.Controls.Add(Me.Label3)
         Me.Controls.Add(Me.txtFirstScoreCol)
@@ -142,4 +154,5 @@ Partial Class Options
     Friend WithEvents txtFirstScoreCol As System.Windows.Forms.TextBox
     Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents txtLastScoreCol As System.Windows.Forms.TextBox
+    Friend WithEvents chkDebug As System.Windows.Forms.CheckBox
 End Class
