@@ -83,6 +83,10 @@ Public Class Form1
         Return split(1) + split(0).ToUpper(CultureInfo.CurrentCulture).Replace("FALL", "2").Replace("SPRING", "1")
     End Function
 
+    Private Function GetSemesterLabel(sortable As String) As String
+        Return If(sortable.Substring(4, 1) = "1", "Spring ", "Fall ") & sortable.Substring(0, 4)
+    End Function
+
     Private Sub BackgroundWorker1_DoWork(sender As Object, e As System.ComponentModel.DoWorkEventArgs) Handles BackgroundWorker1.DoWork
         Dim args As String() = CType(e.Argument, String())
         Dim sourceFile As String = args(0)
@@ -212,61 +216,71 @@ Public Class Form1
                 para.Range.Font.Bold = True
                 para.Range.InsertParagraphAfter()
 
-                Dim table As Word.Table = doc.Tables.Add(doc.Bookmarks.Item("\endofdoc").Range, savg.list.Count() + 1, If(includeDebugInfo, 5, 4))
-                table.Cell(1, 1).Range.Text = "Semester"
+                ' Get the list of semesters the student was active
+                Dim semesters = (From avg In savg.list
+                                 Select avg.sem).Distinct().OrderBy(Function(s As String)
+                                                                        Return s
+                                                                    End Function).ToList()
+                ' Split the scores by test name
+                Dim tests = From avg In savg.list
+                            Group By avg.name
+                            Into list = Group
+
+                Dim table As Word.Table = doc.Tables.Add(doc.Bookmarks.Item("\endofdoc").Range, tests.Count() + 1, semesters.Count + If(includeDebugInfo, 3, 2))
+                table.Cell(1, 1).Range.Text = "Assessment"
                 table.Cell(1, 1).Range.Font.Bold = True
-                table.Cell(1, 2).Range.Text = "Assessment"
-                table.Cell(1, 2).Range.Font.Bold = True
-                table.Cell(1, 3).Range.Text = "Your Score"
-                table.Cell(1, 3).Range.Font.Bold = True
-                table.Cell(1, 4).Range.Text = "Average Score"
-                table.Cell(1, 4).Range.Font.Bold = True
+                For i As Integer = 0 To semesters.Count - 1
+                    table.Cell(1, i + 3).Range.Text = GetSemesterLabel(semesters(i))
+                    table.Cell(1, i + 3).Range.Bold = True
+                Next
 
                 row = 2
-                For Each avg In savg.list
-                    ' Sanity check some data for warnings.
-                    If Not warnedClassStandings Then
-                        Dim standings As List(Of String) = (From s In avg.list
-                                                            Select s.ClassStanding).Distinct().ToList()
-                        If standings.Count > 1 Then
-                            warnedClassStandings = True
-                            LogWarning("WARNING: Student " & ex.StudentID & " has multiple listed class standings ('" & String.Join("', '", standings) & "') for semester " & avg.list.First().Semester, True)
-                        End If
-                    End If
-                    If Not warnedEmphases Then
-                        Dim emphases As List(Of String) = (From s In avg.list
-                                                           Select s.Emphasis).Distinct().ToList()
-                        If emphases.Count > 1 Then
-                            warnedEmphases = True
-                            LogWarning("WARNING: Student " & ex.StudentID & " has multiple listed emphases ('" & String.Join("', '", emphases) & "') for semester " & avg.list.First().Semester, True)
-                        End If
-                    End If
+                For Each test In tests
+                    table.Cell(row, 1).Range.Text = test.name
+                    table.Cell(row, 2).Range.Text = "Yours:" & vbCrLf & "Average:"
+                    'table.Cell(row, 2).Range.Style.HorizontalAlignment = HorizontalAlignment.Right
+                    Dim column As Integer = 3
+                    For Each semester In semesters
+                        Dim avg = (From t In test.list
+                                   Where t.sem = semester
+                                   Select t).FirstOrDefault()
+                        If Not avg Is Nothing Then
+                            ' Sanity check some data for warnings.
+                            If Not warnedClassStandings Then
+                                Dim standings As List(Of String) = (From s In avg.list
+                                                                    Select s.ClassStanding).Distinct().ToList()
+                                If standings.Count > 1 Then
+                                    warnedClassStandings = True
+                                    LogWarning("WARNING: Student " & ex.StudentID & " has multiple listed class standings ('" & String.Join("', '", standings) & "') for semester " & avg.list.First().Semester, True)
+                                End If
+                            End If
+                            If Not warnedEmphases Then
+                                Dim emphases As List(Of String) = (From s In avg.list
+                                                                   Select s.Emphasis).Distinct().ToList()
+                                If emphases.Count > 1 Then
+                                    warnedEmphases = True
+                                    LogWarning("WARNING: Student " & ex.StudentID & " has multiple listed emphases ('" & String.Join("', '", emphases) & "') for semester " & avg.list.First().Semester, True)
+                                End If
+                            End If
 
-                    ' Get the comparative average score for students in the same group
-                    Dim compQ = From score In scores
-                                Where score.SemesterSort = avg.sem AndAlso score.ClassStanding = avg.list.First().ClassStanding AndAlso score.Emphasis = avg.list.First().Emphasis AndAlso score.Name = avg.name
-                                Select score.Score
-                    table.Cell(row, 1).Range.Text = avg.list.First().Semester
-                    table.Cell(row, 1).Range.Font.Bold = False
-                    table.Cell(row, 2).Range.Text = avg.name
-                    table.Cell(row, 2).Range.Font.Bold = False
-                    table.Cell(row, 3).Range.Text = avg.averageScore.ToString("0.##")
-                    table.Cell(row, 3).Range.Font.Bold = False
-                    If compQ.Count() > 0 Then
-                        Dim comp As Decimal = compQ.Average()
-                        table.Cell(row, 4).Range.Text = comp.ToString("0.##")
-                    Else
-                        table.Cell(row, 4).Range.Text = "N/A"
-                    End If
-                    table.Cell(row, 4).Range.Font.Bold = False
+                            ' Get the comparative average score for students in the same group
+                            Dim compQ = From score In scores
+                                        Where score.SemesterSort = avg.sem AndAlso score.ClassStanding = avg.list.First().ClassStanding AndAlso score.Emphasis = avg.list.First().Emphasis AndAlso score.Name = avg.name
+                                        Select score.Score
+
+                            table.Cell(row, column).Range.Text = avg.averageScore.ToString("0.##") & If(compQ.Count() > 0, vbCrLf & compQ.Average().ToString("0.##"), "N/A")
+                        End If
+                        column += 1
+                    Next
                     If includeDebugInfo Then
                         Dim str As New StringBuilder()
-                        str.AppendLine(String.Format("Rollup Student: {0}{2}Rollup Semester: {1}", avg.sid, avg.sem, vbCrLf))
-                        For Each rec In avg.list
-                            str.AppendLine(String.Format("Student: {0}{7}Score Name: {1}{7}Semester: {2} ({3}){7}Standing: {4}{7}Emphasis: {5}{7}Score: {6}", rec.StudentID, rec.Name, rec.Semester, rec.SemesterSort, rec.ClassStanding, rec.Emphasis, rec.Score, vbCrLf))
+                        For Each rec In test.list
+                            For Each avg In rec.list
+                                str.AppendLine(String.Format("Student: {0}{7}Score Name: {1}{7}Semester: {2} ({3}){7}Standing: {4}{7}Emphasis: {5}{7}Score: {6}", avg.StudentID, avg.Name, avg.Semester, avg.SemesterSort, avg.ClassStanding, avg.Emphasis, avg.Score, vbCrLf))
+                            Next
                         Next
-                        table.Cell(row, 5).Range.Text = str.ToString()
-                        table.Cell(row, 5).Range.Font.Bold = False
+                        table.Cell(row, column).Range.Text = str.ToString()
+                        table.Cell(row, column).Range.Font.Bold = False
                     End If
                     row += 1
                 Next
