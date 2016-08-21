@@ -18,7 +18,7 @@ Public Class Form1
                         lblFileName.Text = lblFileName.Text & vbCrLf & "Semester: " & dlgOptions.txtCurrentSemester.Text
                     End If
                     btnCancel.Visible = True
-                    BackgroundWorker1.RunWorkerAsync({OpenFileDialog1.FileName, FolderBrowserDialog1.SelectedPath, dlgOptions.txtCurrentSemester.Text, dlgOptions.txtFirstScoreCol.Text, dlgOptions.txtLastScoreCol.Text, If(dlgOptions.chkDebug.Checked, Boolean.TrueString, Boolean.FalseString)})
+                    BackgroundWorker1.RunWorkerAsync({OpenFileDialog1.FileName, FolderBrowserDialog1.SelectedPath, dlgOptions.txtCurrentSemester.Text, dlgOptions.txtFirstScoreCol.Text, dlgOptions.txtLastScoreCol.Text, dlgOptions.txtSheetName.Text, If(dlgOptions.chkDebug.Checked, Boolean.TrueString, Boolean.FalseString)})
                 End If
             End If
         End If
@@ -97,7 +97,8 @@ Public Class Form1
         End If
         Dim firstScoreCol As Integer = ConvertExcelColumnToInteger(args(3))
         Dim lastScoreCol As Integer = ConvertExcelColumnToInteger(args(4))
-        Dim includeDebugInfo As Boolean = Boolean.TrueString.Equals(args(5), StringComparison.OrdinalIgnoreCase)
+        Dim sheetName As String = args(5)
+        Dim includeDebugInfo As Boolean = Boolean.TrueString.Equals(args(6), StringComparison.OrdinalIgnoreCase)
         Dim excel As Excel.Application = Nothing
         Dim workbook As Excel.Workbook = Nothing
         Dim worksheet As Excel.Worksheet = Nothing
@@ -107,6 +108,15 @@ Public Class Form1
             excel.Visible = False
             workbook = excel.Workbooks.Open(sourceFile)
             worksheet = workbook.Worksheets(1)
+            If Not String.IsNullOrWhiteSpace(sheetName) Then
+                For i As Integer = 1 To workbook.Worksheets.Count
+                    Dim sheet As Excel.Worksheet = workbook.Worksheets(i)
+                    If sheetName.Equals(sheet.Name, StringComparison.OrdinalIgnoreCase) Then
+                        worksheet = sheet
+                        Exit For
+                    End If
+                Next
+            End If
 
             ' Sanity check
             Dim columnTitle As String = GetStringCellValue(worksheet, 1, ColumnIDs.FirstName)
@@ -164,10 +174,10 @@ Public Class Form1
 
             If Not String.IsNullOrEmpty(currentSemester) Then
                 Dim studentNames As ILookup(Of String, String) = (From score In scores
-                                                          Where score.SemesterSort = currentSemester
-                                                          Select score.StudentID).ToLookup(Function(studentID As String)
-                                                                                               Return studentID
-                                                                                           End Function)
+                                                                  Where score.SemesterSort = currentSemester
+                                                                  Select score.StudentID).ToLookup(Function(studentID As String)
+                                                                                                       Return studentID
+                                                                                                   End Function)
 
                 scores = (From score In scores
                           Where studentNames.Contains(score.StudentID)

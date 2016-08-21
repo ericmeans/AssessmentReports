@@ -33,16 +33,18 @@ Partial Class Options
         Me.Label3 = New System.Windows.Forms.Label()
         Me.txtLastScoreCol = New System.Windows.Forms.TextBox()
         Me.chkDebug = New System.Windows.Forms.CheckBox()
+        Me.txtSheetName = New System.Windows.Forms.TextBox()
+        Me.Label4 = New System.Windows.Forms.Label()
         Me.SuspendLayout()
         '
         'btnReady
         '
         Me.btnReady.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.btnReady.DialogResult = System.Windows.Forms.DialogResult.OK
-        Me.btnReady.Location = New System.Drawing.Point(193, 61)
+        Me.btnReady.Location = New System.Drawing.Point(193, 104)
         Me.btnReady.Name = "btnReady"
         Me.btnReady.Size = New System.Drawing.Size(110, 49)
-        Me.btnReady.TabIndex = 4
+        Me.btnReady.TabIndex = 5
         Me.btnReady.Text = "Ready"
         Me.btnReady.UseVisualStyleBackColor = True
         '
@@ -69,10 +71,10 @@ Partial Class Options
         '
         Me.Button1.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.Button1.DialogResult = System.Windows.Forms.DialogResult.Cancel
-        Me.Button1.Location = New System.Drawing.Point(12, 82)
+        Me.Button1.Location = New System.Drawing.Point(12, 125)
         Me.Button1.Name = "Button1"
         Me.Button1.Size = New System.Drawing.Size(59, 28)
-        Me.Button1.TabIndex = 5
+        Me.Button1.TabIndex = 6
         Me.Button1.Text = "Cancel"
         Me.Button1.UseVisualStyleBackColor = True
         '
@@ -113,12 +115,31 @@ Partial Class Options
         'chkDebug
         '
         Me.chkDebug.AutoSize = True
-        Me.chkDebug.Location = New System.Drawing.Point(15, 59)
+        Me.chkDebug.Location = New System.Drawing.Point(12, 84)
         Me.chkDebug.Name = "chkDebug"
         Me.chkDebug.Size = New System.Drawing.Size(117, 17)
-        Me.chkDebug.TabIndex = 3
+        Me.chkDebug.TabIndex = 4
         Me.chkDebug.Text = "Include Debug Info"
         Me.chkDebug.UseVisualStyleBackColor = True
+        '
+        'txtSheetName
+        '
+        Me.txtSheetName.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.txtSheetName.Location = New System.Drawing.Point(106, 58)
+        Me.txtSheetName.Name = "txtSheetName"
+        Me.txtSheetName.Size = New System.Drawing.Size(197, 20)
+        Me.txtSheetName.TabIndex = 3
+        Me.txtSheetName.Text = "Sheet1"
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(12, 61)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(66, 13)
+        Me.Label4.TabIndex = 7
+        Me.Label4.Text = "Sheet Name"
         '
         'Options
         '
@@ -126,8 +147,10 @@ Partial Class Options
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.CancelButton = Me.Button1
-        Me.ClientSize = New System.Drawing.Size(315, 122)
+        Me.ClientSize = New System.Drawing.Size(315, 165)
         Me.ControlBox = False
+        Me.Controls.Add(Me.txtSheetName)
+        Me.Controls.Add(Me.Label4)
         Me.Controls.Add(Me.chkDebug)
         Me.Controls.Add(Me.txtLastScoreCol)
         Me.Controls.Add(Me.Label3)
@@ -155,4 +178,6 @@ Partial Class Options
     Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents txtLastScoreCol As System.Windows.Forms.TextBox
     Friend WithEvents chkDebug As System.Windows.Forms.CheckBox
+    Friend WithEvents txtSheetName As TextBox
+    Friend WithEvents Label4 As Label
 End Class
